@@ -18,50 +18,50 @@ from utils.WelfordStatisticsTracker import WelfordStatisticsTracker
 from utils.pearson_correlation import pearson_correlation_batch_cuda
 from configs import ProjectConfigs
 
-# parser = argparse.ArgumentParser()
-# parser.add_argument('--symm', type=str, default='mul', help='method to demonstrate the use of merger')
-# parser.add_argument('--lr', type=float, help='learning rate', default=0.0008) #choices=[0.01, 0.001, 0.0001]
-# parser.add_argument('--batch', type=int, help='batch size', default=1024)
-# parser.add_argument('--epoch', type=int, help='epoch size', default=300)
-# parser.add_argument('--epoch_counter', type=int, help='epoch counter', default=1)
-# parser.add_argument('--ch_encoder', type=int, help='number of latent channels', default=128)
-# parser.add_argument('--ch_decoder', type=int, help='number of latent channels', default=128)
-# parser.add_argument('--num_encoder_layers', type=int, help='number of encoder layers', default=6)
-# parser.add_argument('--num_decoder_layers', type=int, help='number of decoder layers', default=6)
-# parser.add_argument('--itr', type=int, help='number of training iterations', default=1)
-# parser.add_argument('--fourier_encoding', type=bool, help='includes fourier encoding of pos', default=True)
-# parser.add_argument('--parametric_encoding', type=bool, help='includes parametric encoding of pos', default=True)
-# parser.add_argument('--n_fourier_features', type=int, help='number of fourier features', default=12)
-# parser.add_argument('--coarse_resolution', type=tuple, help='tuple of coarse resolution for x, y, z', default=(16, 16, 16))
-# parser.add_argument('--fine_resolution', type=tuple, help='tuple of fine resolution for x, y, z', default=(256, 256, 256))
-# parser.add_argument('--num_levels', type=int, help='number of levels', default=6)
-# parser.add_argument('--num_nodes', type=int, help='number of nodes', default=2**30)
-# parser.add_argument('--num_channels', type=int, help='number of channels', default=12)
-# parser.add_argument('--dependence_method', type=str, default='pearson', help='statistical dependence method')
-# args_dict = vars(parser.parse_args())
+parser = argparse.ArgumentParser()
+parser.add_argument('--symm', type=str, default='mul', help='method to demonstrate the use of merger')
+parser.add_argument('--lr', type=float, help='learning rate', default=0.0008) #choices=[0.01, 0.001, 0.0001]
+parser.add_argument('--batch', type=int, help='batch size', default=1024)
+parser.add_argument('--epoch', type=int, help='epoch size', default=300)
+parser.add_argument('--epoch_counter', type=int, help='epoch counter', default=1)
+parser.add_argument('--ch_encoder', type=int, help='number of latent channels', default=128)
+parser.add_argument('--ch_decoder', type=int, help='number of latent channels', default=128)
+parser.add_argument('--num_encoder_layers', type=int, help='number of encoder layers', default=6)
+parser.add_argument('--num_decoder_layers', type=int, help='number of decoder layers', default=6)
+parser.add_argument('--itr', type=int, help='number of training iterations', default=1)
+parser.add_argument('--fourier_encoding', type=bool, help='includes fourier encoding of pos', default=True)
+parser.add_argument('--parametric_encoding', type=bool, help='includes parametric encoding of pos', default=True)
+parser.add_argument('--n_fourier_features', type=int, help='number of fourier features', default=12)
+parser.add_argument('--coarse_resolution', type=tuple, help='tuple of coarse resolution for x, y, z', default=(16, 16, 16))
+parser.add_argument('--fine_resolution', type=tuple, help='tuple of fine resolution for x, y, z', default=(256, 256, 256))
+parser.add_argument('--num_levels', type=int, help='number of levels', default=6)
+parser.add_argument('--num_nodes', type=int, help='number of nodes', default=2**30)
+parser.add_argument('--num_channels', type=int, help='number of channels', default=12)
+parser.add_argument('--dependence_method', type=str, default='pearson', help='statistical dependence method')
+args_dict = vars(parser.parse_args())
 
 
-args_dict = {
-    'symm': 'mul', 
-    'lr': 0.0008, 
-    'batch': 1024,
-    'epoch': 300, 
-    'epoch_counter': 1,
-    'ch_encoder': 128,
-    'ch_decoder': 128,
-    'num_encoder_layers': 6,
-    'num_decoder_layers': 6,
-    'itr': 1,
-    'fourier_encoding': True,
-    'parametric_encoding': True,
-    'n_fourier_features': 12,
-    'coarse_resolution': 16,
-    'fine_resolution': 256,
-    'num_levels': 6,
-    'num_nodes': 30,
-    'num_channels': 12,
-    'dependence_method': 'pearson'
-}
+# args_dict = {
+#     'symm': 'mul', 
+#     'lr': 0.0008, 
+#     'batch': 1024,
+#     'epoch': 300, 
+#     'epoch_counter': 1,
+#     'ch_encoder': 128,
+#     'ch_decoder': 128,
+#     'num_encoder_layers': 6,
+#     'num_decoder_layers': 6,
+#     'itr': 1,
+#     'fourier_encoding': True,
+#     'parametric_encoding': True,
+#     'n_fourier_features': 12,
+#     'coarse_resolution': 16,
+#     'fine_resolution': 256,
+#     'num_levels': 6,
+#     'num_nodes': 30,
+#     'num_channels': 12,
+#     'dependence_method': 'pearson'
+# }
 
 
 SOURCE_PATH = ProjectConfigs().DATA_PATH
@@ -70,6 +70,8 @@ EXPERIMENT_DIR = ProjectConfigs().EXPEREMENT_PATH
 EXPERIMENT_PATH = os.path.abspath(EXPERIMENT_DIR)
 USE_BATCH_LOADER = True
 CONFIG_PATH = './configs'
+train_dir = './sampled_data/train'
+validation_dir = 'sampled_data/validation'
 
 with open(f'{CONFIG_PATH}/encoder_configs.json') as f:
     encoder_configs = json.load(f)
@@ -93,9 +95,6 @@ epochs = args_dict['epoch']
 experiment_iter = args_dict['itr']
 corr_method = args_dict['dependence_method']
 
-# ensemble_data = xr.open_mfdataset(os.path.join(SOURCE_PATH, '*.nc'),
-#                                  concat_dim='members', combine='nested')
-# data = ensemble_data.tk.isel(time=5)[0:MEMBERS, 0:LEVELS].values
 
 if not os.path.isdir(EXPERIMENT_DIR):
     os.makedirs(EXPERIMENT_PATH)
@@ -107,7 +106,7 @@ device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 print(device)
 
 def main():
-    train_data = xr.open_mfdataset('/mnt/data2/sampled_gt/random/u/train/all/*_train0.nc')
+    train_data = xr.open_mfdataset(f'{train_dir}/*_train0.nc')
     pos_ref_train = torch.from_numpy(train_data.pos_ref.values)
     pos_train = torch.from_numpy(train_data.pos.values)
     
@@ -120,7 +119,7 @@ def main():
     else:
         raise NotImplementedError()
     
-    validation_data = xr.open_mfdataset('/mnt/data2/sampled_gt/random/u/validation/*.nc')
+    validation_data = xr.open_mfdataset(f'{validation_dir}/*.nc')
     pos_ref_val = torch.from_numpy(validation_data.pos_ref.values)
     pos_val = torch.from_numpy(validation_data.pos.values)
     if corr_method == 'pearson':
@@ -183,7 +182,7 @@ def main():
         stats_tracker.reset()
         print('[INFO] Starting epoch {}. {} batches to train.'.format(e, len(train_loader)))
         if (e + 1) % args_dict['epoch_counter'] == 0:
-            train_data = xr.open_mfdataset(f'/mnt/data2/sampled_gt/random/u/train/all/*_train{n}.nc')
+            train_data = xr.open_mfdataset(f'{train_dir}/*_train{n}.nc')
             n += 1
             pos_ref_train = torch.from_numpy(train_data.pos_ref.values)
             pos_train = torch.from_numpy(train_data.pos.values)
