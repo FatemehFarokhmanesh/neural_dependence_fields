@@ -11,17 +11,25 @@ from utils.ensemble_member_dataset import EnsemblePositionDataset, EnsembleMulti
 from utils.pearson_correlation import pearson_correlation_batch_cuda
 import pycoriander
 
-# parser = argparse.ArgumentParser()
-# parser.add_argument('--source_path', type=str, default='/mnt/data2/ensemble/1000_member', help='path to ensemble dataset nc files')
-# parser.add_argument('--num_train', type=int, default=1000000) 
-# parser.add_argument('--num_validation', type=int, help='batch size', default=200000)
-# parser.add_argument('--num_samples', type=int, help='resampling iteration', default=300)
+parser = argparse.ArgumentParser()
+parser.add_argument('--source_path', type=str, default='/mnt/data2/ensemble/1000_member', help='path to ensemble dataset nc files')
+parser.add_argument('--num_train', type=int, default=1000000) 
+parser.add_argument('--num_validation', type=int, help='batch size', default=200000)
+parser.add_argument('--num_samples', type=int, help='resampling iteration', default=300)
 
-# args_dict = vars(parser.parse_args())
+args_dict = vars(parser.parse_args())
 
 device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 multi_var = False
-SOURCE_PATH = '/mnt/data2/ensemble/1000_member'
+# SOURCE_PATH = '/mnt/data2/ensemble/1000_member'
+# NUM_POINTS_TRAIN = 1000000
+# NUM_POINTS_VAL = 200000
+# n_samples = 300
+
+SOURCE_PATH = args_dict['source_path']
+NUM_POINTS_TRAIN = args_dict['num_train']
+NUM_POINTS_VAL = args_dict['num_validation']
+n_samples = args_dict['num_samples']
 EXPERIMENT_PATH ='./sampled_data'
 
 if not os.path.isdir(EXPERIMENT_PATH):
@@ -36,9 +44,6 @@ if not os.path.isdir(TRAIN_DIR):
 if not os.path.isdir(VALIDATION_DIR):
     os.makedirs(os.path.abspath(VALIDATION_DIR))
 
-NUM_POINTS_TRAIN = 1000000
-NUM_POINTS_VAL = 200000
-n_samples = 300
 members_path = sorted(
     glob.glob(os.path.join(SOURCE_PATH, '*.nc')), reverse=False)
 members_path = members_path[:MEMBERS]
