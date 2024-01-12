@@ -1,6 +1,6 @@
 # neural_dependence_fields
 
-requirements:
+Requirements:
 
 pytorch-cuda=11.7
 
