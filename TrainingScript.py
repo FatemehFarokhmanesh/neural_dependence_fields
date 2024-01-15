@@ -169,6 +169,7 @@ def main():
     loss_function = nn.L1Loss()
     scheduler = ReduceLROnPlateau(opt, mode='min', factor=0.1, patience=20, threshold=0.001)
     stats_tracker = WelfordStatisticsTracker()
+    relu = nn.ReLU()
     
     models_dir = f'{experiment_folder}/models'
     if not os.path.isdir(models_dir):
@@ -238,10 +239,12 @@ def main():
                 f_ref = encoder(pos_ref)
                 f = encoder(pos)
                 out = main_decoder(f_ref, f)
+                if corr_method == 'pearson':
+                    out = torch.clamp(out, min=-1, max=1)
+                elif corr_method == 'mi':
+                    out = relu(out)
                 prediction = out
                 loss = loss_function(prediction, corr_true)
-                loss.backward()
-                opt.step()
                 loss = loss.item()
                 stats_tracker.update(loss, weight=len(batch))
                 pbar.step(batch[0].shape[0])
