@@ -41,27 +41,27 @@ parser.add_argument('--dependence_method', type=str, default='pearson', help='st
 args_dict = vars(parser.parse_args())
 
 
-args_dict = {
-    'symm': 'mul', 
-    'lr': 0.0008, 
-    'batch': 1024,
-    'epoch': 3, 
-    'epoch_counter': 1,
-    'ch_encoder': 128,
-    'ch_decoder': 128,
-    'num_encoder_layers': 6,
-    'num_decoder_layers': 6,
-    'itr': 1,
-    'fourier_encoding': True,
-    'parametric_encoding': True,
-    'n_fourier_features': 12,
-    'coarse_resolution': 16,
-    'fine_resolution': 256,
-    'num_levels': 6,
-    'num_nodes': 30,
-    'num_channels': 12,
-    'dependence_method': 'pearson'
-}
+# args_dict = {
+#     'symm': 'mul', 
+#     'lr': 0.0008, 
+#     'batch': 1024,
+#     'epoch': 300, 
+#     'epoch_counter': 1,
+#     'ch_encoder': 128,
+#     'ch_decoder': 128,
+#     'num_encoder_layers': 6,
+#     'num_decoder_layers': 6,
+#     'itr': 1,
+#     'fourier_encoding': True,
+#     'parametric_encoding': True,
+#     'n_fourier_features': 12,
+#     'coarse_resolution': 16,
+#     'fine_resolution': 256,
+#     'num_levels': 6,
+#     'num_nodes': 30,
+#     'num_channels': 12,
+#     'dependence_method': 'pearson'
+# }
 
 
 SOURCE_PATH = ProjectConfigs().DATA_PATH
@@ -70,8 +70,8 @@ EXPERIMENT_DIR = ProjectConfigs().EXPEREMENT_PATH
 EXPERIMENT_PATH = os.path.abspath(EXPERIMENT_DIR)
 USE_BATCH_LOADER = True
 CONFIG_PATH = './configs'
-train_dir = '/mnt/data2/sampled_gt/random/u/train/all'
-validation_dir = '/mnt/data2/sampled_gt/random/u/validation'
+train_dir = './sampled_data/train'
+validation_dir = './sampled_data/validation'
 
 with open(f'{CONFIG_PATH}/encoder_configs.json') as f:
     encoder_configs = json.load(f)
