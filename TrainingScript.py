@@ -41,27 +41,27 @@ parser.add_argument('--dependence_method', type=str, default='pearson', help='st
 args_dict = vars(parser.parse_args())
 
 
-# args_dict = {
-#     'symm': 'mul', 
-#     'lr': 0.0008, 
-#     'batch': 1024,
-#     'epoch': 300, 
-#     'epoch_counter': 1,
-#     'ch_encoder': 128,
-#     'ch_decoder': 128,
-#     'num_encoder_layers': 6,
-#     'num_decoder_layers': 6,
-#     'itr': 1,
-#     'fourier_encoding': True,
-#     'parametric_encoding': True,
-#     'n_fourier_features': 12,
-#     'coarse_resolution': 16,
-#     'fine_resolution': 256,
-#     'num_levels': 6,
-#     'num_nodes': 30,
-#     'num_channels': 12,
-#     'dependence_method': 'pearson'
-# }
+args_dict = {
+    'symm': 'mul', 
+    'lr': 0.0008, 
+    'batch': 1024,
+    'epoch': 3, 
+    'epoch_counter': 1,
+    'ch_encoder': 128,
+    'ch_decoder': 128,
+    'num_encoder_layers': 6,
+    'num_decoder_layers': 6,
+    'itr': 1,
+    'fourier_encoding': True,
+    'parametric_encoding': True,
+    'n_fourier_features': 12,
+    'coarse_resolution': 16,
+    'fine_resolution': 256,
+    'num_levels': 6,
+    'num_nodes': 30,
+    'num_channels': 12,
+    'dependence_method': 'pearson'
+}
 
 
 SOURCE_PATH = ProjectConfigs().DATA_PATH
@@ -70,8 +70,8 @@ EXPERIMENT_DIR = ProjectConfigs().EXPEREMENT_PATH
 EXPERIMENT_PATH = os.path.abspath(EXPERIMENT_DIR)
 USE_BATCH_LOADER = True
 CONFIG_PATH = './configs'
-train_dir = './sampled_data/train'
-validation_dir = 'sampled_data/validation'
+train_dir = '/mnt/data2/sampled_gt/random/u/train/all'
+validation_dir = '/mnt/data2/sampled_gt/random/u/validation'
 
 with open(f'{CONFIG_PATH}/encoder_configs.json') as f:
     encoder_configs = json.load(f)
@@ -106,19 +106,6 @@ device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 print(device)
 
 def main():
-    train_data = xr.open_mfdataset(f'{train_dir}/*_train0.nc')
-    pos_ref_train = torch.from_numpy(train_data.pos_ref.values)
-    pos_train = torch.from_numpy(train_data.pos.values)
-    
-    if corr_method == 'pearson':
-        pearson_train = torch.from_numpy(train_data.pearson.values)#.to(device)
-        train_input = torch.cat([pos_ref_train, pos_train, pearson_train], dim=1).to(device)
-    elif corr_method == 'mi':
-        mi_train = torch.from_numpy(train_data.__xarray_dataarray_variable__.values)#.to(device)
-        train_input = torch.cat([pos_ref_train, pos_train, mi_train], dim=1).to(device)
-    else:
-        raise NotImplementedError()
-    
     validation_data = xr.open_mfdataset(f'{validation_dir}/*.nc')
     pos_ref_val = torch.from_numpy(validation_data.pos_ref.values)
     pos_val = torch.from_numpy(validation_data.pos.values)
@@ -131,13 +118,10 @@ def main():
     else:
         raise NotImplementedError()
     
-    dataset_train = SampledEnsembleDataset(train_input)
     dataset_validation = SampledEnsembleDataset(validation_input)
     if USE_BATCH_LOADER:
-        train_loader = BatchLoader(dataset_train, batch_size=batch_size, shuffle=True)
         validation_loader = BatchLoader(dataset_validation, batch_size=batch_size)
     else:
-        train_loader = DataLoader(dataset_train, batch_size=batch_size, num_workers=4)
         validation_loader = DataLoader(dataset_validation, batch_size=batch_size, num_workers=4)
     
     fourier_features = NerfFourierFeatures(3, args_dict['n_fourier_features']).to(device)
@@ -174,15 +158,13 @@ def main():
     models_dir = f'{experiment_folder}/models'
     if not os.path.isdir(models_dir):
         os.makedirs(os.path.abspath(models_dir))
-        os.makedirs(os.path.abspath(f'{models_dir}/jit_save_models'))
-    path = f'{models_dir}/jit_save_models/mi_srn'
-    n = 1
+    
+    n = 0
     for e in range(epochs):
         # Training loop
         model.train()
         stats_tracker.reset()
-        print('[INFO] Starting epoch {}. {} batches to train.'.format(e, len(train_loader)))
-        if (e + 1) % args_dict['epoch_counter'] == 0:
+        if e % args_dict['epoch_counter'] == 0:
             train_data = xr.open_mfdataset(f'{train_dir}/*_train{n}.nc')
             n += 1
             pos_ref_train = torch.from_numpy(train_data.pos_ref.values)
@@ -200,6 +182,7 @@ def main():
                 train_loader = BatchLoader(dataset_train, batch_size=batch_size, shuffle=True)
             else:
                 train_loader = DataLoader(dataset_train, batch_size=batch_size, num_workers=4)
+        print('[INFO] Starting epoch {}. {} batches to train.'.format(e, len(train_loader)))
         pbar = ProgressBar(len(dataset_train))
 
         for i, batch in enumerate(train_loader):
