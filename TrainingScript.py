@@ -98,7 +98,7 @@ corr_method = args_dict['dependence_method']
 
 if not os.path.isdir(EXPERIMENT_DIR):
     os.makedirs(EXPERIMENT_PATH)
-experiment_folder = f"{EXPERIMENT_PATH}/{experiment_iter}"
+experiment_folder = f"{EXPERIMENT_PATH}"
 if not os.path.isdir(experiment_folder):
     os.makedirs(os.path.abspath(experiment_folder))
 writer = SummaryWriter(f'{experiment_folder}/summary')
