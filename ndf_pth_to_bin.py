@@ -1,6 +1,8 @@
 import os
+import sys
 import torch
 import itertools
+import zipfile
 import numpy as np
 import argparse
 
@@ -63,8 +65,8 @@ def main():
 
     encoder_param_list.append(cp_values_grid_0)
 
-    data_raw = np.float32(np.array(list(itertools.chain.from_iterable(encoder_param_list))))
-    bin_writer(data_raw, format, bin_path, module='encoder')
+    data_raw_enc = np.float32(np.array(list(itertools.chain.from_iterable(encoder_param_list))))
+    #bin_writer(data_raw_enc, format, bin_path, module='encoder')
 
     # decoder
     cp_dict = dict(checkpoint_decoder)
@@ -80,25 +82,54 @@ def main():
     cp_values5 = torch.nn.functional.pad(cp_values[n_layers_decoder-1], p1d, 'constant', 0)
     cp_values_5 = torch.flatten(cp_values5).tolist()
     decoder_param_list.append(cp_values_5)
-    data_raw = np.float32(np.array(list(itertools.chain.from_iterable(decoder_param_list))))
-    bin_writer(data_raw, format, bin_path, module='decoder')
+    data_raw_dec = np.float32(np.array(list(itertools.chain.from_iterable(decoder_param_list))))
+    #bin_writer(data_raw_dec, format, bin_path, module='decoder')
+
+    zip_writer(data_raw_enc, data_raw_dec, path, bin_path)
 
 def checkpoint_loader(pth):
     return torch.load(pth, map_location={'cuda:0': 'cpu'})
 
 def bin_writer(data_raw, format, bin_path, module):
     numparam = np.uint32(data_raw.shape[0])
-    draw_file = open(f'{bin_path}/data.bin','w+')
+    draw_file = open(f'{bin_path}/data.bin', 'w+')
     data_raw.tofile(draw_file)
     header = np.array([format, numparam])
-    header_file = open(f'{bin_path}/header.bin','w+')
+    header_file = open(f'{bin_path}/header.bin', 'w+')
     header.tofile(header_file)
-    with open(f'{bin_path}/data.bin','rb') as f:
+    with open(f'{bin_path}/data.bin', 'rb') as f:
         data_ = f.read()
-    with open(f'{bin_path}/header.bin','rb') as f:
+    with open(f'{bin_path}/header.bin', 'rb') as f:
         header_ = f.read()
-    with open(f'{bin_path}/network_{module}.bin','wb') as f:
+    with open(f'{bin_path}/network_{module}.bin', 'wb') as f:
         f.write(header_ + data_)
+
+def serialize_network_weights(weights):
+    weights_bytearray = bytearray()
+    weights_bytearray.extend(int(0).to_bytes(4, sys.byteorder))
+    weights_bytearray.extend(int(weights.shape[0]).to_bytes(4, sys.byteorder))
+    weights_bytearray.extend(weights.tobytes())
+    return weights_bytearray
+
+def read_file(path):
+    with open(path, 'r') as file:
+        return file.read()
+
+def zip_writer(weights_encoder, weights_decoder, path, bin_path):
+    config_encoder_data = read_file(f'{path}/config_encoder.json')
+    config_decoder_data = read_file(f'{path}/config_decoder.json')
+    config_data = read_file(f'{path}/config.json')
+
+    out_path = f'{bin_path}/network.zip'
+    archive = zipfile.ZipFile(out_path, 'w')
+    archive.writestr('config.json', config_data)
+    archive.writestr('config_encoder.json', config_encoder_data)
+    archive.writestr('config_decoder.json', config_decoder_data)
+
+    weights_encoder = serialize_network_weights(weights_encoder)
+    weights_decoder = serialize_network_weights(weights_decoder)
+    archive.writestr('network_encoder.bin', weights_encoder)
+    archive.writestr('network_decoder.bin', weights_decoder)
 
 if __name__ == '__main__':
     main()

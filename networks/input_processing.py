@@ -1,31 +1,31 @@
 import torch
 from torch import nn
-from utils.ensemble_member_dataset import MEMBERS
 device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 
 class InputProcessing(nn.Module):
 
     def __init__(self, fourier_module, 
-                        latent_feature_module, fourier_encoding=True, parametric_encoding= True):
+                        latent_feature_module, members, fourier_encoding=True, parametric_encoding= True):
         super(InputProcessing, self).__init__()
         self.fourier_module = fourier_module
         self.latent_feature_module = latent_feature_module
+        self.members = members
         self.fourier_encoding = fourier_encoding
         self.parametric_encoding = parametric_encoding
 
     def forward(self, inputs, pos):
-        positions = pos.unsqueeze(1).repeat(1, MEMBERS, 1)
+        positions = pos.unsqueeze(1).repeat(1, self.members, 1)
         inputs = inputs.unsqueeze(-1)
         if self.fourier_encoding:
             if self.parametric_encoding:
                 encoding = self.fourier_module(pos)
-                encoding = encoding.unsqueeze(1).repeat(1, MEMBERS, 1)
+                encoding = encoding.unsqueeze(1).repeat(1, self.members, 1)
                 trainable_encoding = self.latent_feature_module(pos)
-                trainable_encoding = trainable_encoding.unsqueeze(1).repeat(1, MEMBERS, 1)
+                trainable_encoding = trainable_encoding.unsqueeze(1).repeat(1, self.members, 1)
                 inputs_list = [trainable_encoding, encoding.to(device), inputs, positions]
             else:
                 encoding = self.fourier_module(pos)
-                encoding = encoding.unsqueeze(1).repeat(1, MEMBERS, 1)
+                encoding = encoding.unsqueeze(1).repeat(1, self.members, 1)
                 inputs_list = [encoding, inputs, positions]
         else:
             inputs_list = [inputs, positions]

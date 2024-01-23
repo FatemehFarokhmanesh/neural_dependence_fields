@@ -1,5 +1,6 @@
 import os
 import json
+import shutil
 import argparse
 import xarray as xr
 import torch
@@ -12,7 +13,7 @@ from latent_features.fourier_features import NerfFourierFeatures
 from networks.srn_mine_net import PytorchDecoder, PytorchEncoder, MainDecoderPosition, SymmNetAdd, EncoderDecoder, SymmNetAddDiff, Multiplier
 from networks.input_processing import InputProcessingPosition
 from utils.batch_loader import BatchLoader
-from utils.ensemble_member_dataset import SampledEnsembleDataset, MEMBERS, LEVELS, LATITUDE, LONGITUDE
+from utils.ensemble_member_dataset import SampledEnsembleDataset
 from utils.ProgressBar import ProgressBar
 from utils.WelfordStatisticsTracker import WelfordStatisticsTracker
 from utils.pearson_correlation import pearson_correlation_batch_cuda
@@ -242,7 +243,31 @@ def main():
     torch.save(feature_grid.state_dict(), f'{models_dir}/input_processing{e + 1}.pth')
     torch.save(encoder.state_dict(), f'{models_dir}/encoder{e + 1}.pth')
     torch.save(main_decoder.state_dict(), f'{models_dir}/decoder{e + 1}.pth')
+    shutil.copyfile(f'{CONFIG_PATH}/config_encoder.json', f'{models_dir}/config_encoder.json')
+    shutil.copyfile(f'{CONFIG_PATH}/config_decoder.json', f'{models_dir}/config_decoder.json')
+    with open(f'{models_dir}/config.json', 'w') as file:
+        if symm_method == "sum":
+            symm_name = 'Add'
+        elif symm_method == "sum-diff":
+            symm_name = 'AddDiff'
+        elif symm_method == "mul":
+            symm_name = 'Mul'
+        else:
+            raise NotImplementedError()
+        if corr_method == 'pearson':
+            is_mi = 'false'
+        elif corr_method == 'mi':
+            is_mi = 'true'
+        else:
+            raise NotImplementedError()
+        file.write(
+            '{\n' +
+            f'    "network_type": "MINE_SRN",\n' +
+            f'    "symmetrizer_type": "{symm_name}",\n' +
+            f'    "is_mutual_information": {is_mi}\n' +
+            '}\n')
     with open(DESCRIPTION_FILE_NAME, 'w') as fp:
         json.dump(args_dict, fp, indent=4)
+
 if __name__ == '__main__':
     main()

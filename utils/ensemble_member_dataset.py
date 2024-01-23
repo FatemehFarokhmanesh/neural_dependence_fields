@@ -7,16 +7,12 @@ from utils.sampling import CauchySampler
 
 sampler = CauchySampler(scale=0.2, num_dims=3, min=-1, max=1.)
 
-MEMBERS = 5
-LEVELS = 20
-LATITUDE = 352
-LONGITUDE = 250
-
 class EnsemblePositionDataset(Dataset):
 
-    def __init__(self, data, num_points, grid='random'):
+    def __init__(self, data, num_points, members, grid='random'):
         self.data = data
         self.num_points = num_points
+        self.members = members
         self.grid = grid
         self.pairs = self.grid_sampler()
         self.N = self.pairs[1].shape[0]
@@ -47,7 +43,7 @@ class EnsemblePositionDataset(Dataset):
 
     
     def _grid_sampler(self, input, positions, min, max):
-        member_grid = positions.unsqueeze(0).repeat(MEMBERS, 1, 1)  # add member dim
+        member_grid = positions.unsqueeze(0).repeat(self.members, 1, 1)  # add member dim
         grid = member_grid.unsqueeze(2).unsqueeze(2)
         output = torch.nn.functional.grid_sample(input, grid, align_corners=True)
         output_squeezed = torch.squeeze(output)
@@ -71,9 +67,10 @@ class SampledEnsembleDataset(Dataset):
 
 class EnsembleMultiVarDataset(Dataset):
 
-    def __init__(self, variables, num_points, grid='random'):
+    def __init__(self, variables, num_points, members, grid='random'):
         self.variables = variables
         self.num_points = num_points
+        self.members = members
         self.grid = grid
         self.pairs = self.grid_sampler()
         self.N = self.pairs[0].shape[0]
@@ -102,7 +99,7 @@ class EnsembleMultiVarDataset(Dataset):
         return positions_ref, positions, out_ref, out
 
     def _grid_sampler(self, input, positions, min, max):
-        member_grid = positions.unsqueeze(0).repeat(MEMBERS, 1, 1)  # add member dim
+        member_grid = positions.unsqueeze(0).repeat(self.members, 1, 1)  # add member dim
         grid = member_grid.unsqueeze(2).unsqueeze(2)
         output = torch.nn.functional.grid_sample(input, grid, align_corners=True)
         output_squeezed = torch.squeeze(output)

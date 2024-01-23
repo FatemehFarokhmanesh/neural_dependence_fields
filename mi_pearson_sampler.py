@@ -7,7 +7,7 @@ import xarray as xr
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
-from utils.ensemble_member_dataset import EnsemblePositionDataset, EnsembleMultiVarDataset, MEMBERS
+from utils.ensemble_member_dataset import EnsemblePositionDataset, EnsembleMultiVarDataset
 from utils.pearson_correlation import pearson_correlation_batch_cuda
 import pycoriander
 
@@ -18,6 +18,7 @@ parser.add_argument('--num_train', type=int, default=1000000)
 parser.add_argument('--num_validation', type=int, help='batch size', default=200000)
 parser.add_argument('--num_samples', type=int, help='resampling iteration', default=300)
 parser.add_argument('--varname', type=str, default='u', help='name of the variable to load from the .nc files')
+parser.add_argument('--members', type=int, default=None, help='number of ensemble members to use')
 
 args_dict = vars(parser.parse_args())
 
@@ -33,6 +34,7 @@ INDICES = args_dict['indices']
 VARNAME = args_dict['varname']
 NUM_POINTS_TRAIN = args_dict['num_train']
 NUM_POINTS_VAL = args_dict['num_validation']
+MEMBERS = args_dict['members']
 n_samples = args_dict['num_samples']
 EXPERIMENT_PATH ='./sampled_data'
 
@@ -74,7 +76,10 @@ if INDICES is not None:
 else:
     members_path = sorted(
         glob.glob(os.path.join(SOURCE_PATH, '*.nc')), reverse=False)
-members_path = members_path[:MEMBERS]
+if MEMBERS is not None:
+    members_path = members_path[:MEMBERS]
+else:
+    MEMBERS = len(members_path)
 ensemble_data = xr.open_mfdataset(members_path,
                                   concat_dim='members', combine='nested')
 if 'time' in ensemble_data[VARNAME].dims:
@@ -86,7 +91,7 @@ if multi_var:
     variables = [var_1, var_2]
 # multivar
 if multi_var:
-    dataset_validation = EnsembleMultiVarDataset(variables, NUM_POINTS_VAL)
+    dataset_validation = EnsembleMultiVarDataset(variables, NUM_POINTS_VAL, MEMBERS)
     validation_loader = DataLoader(dataset_validation, batch_size=NUM_POINTS_VAL, num_workers=4)
     for i, batch in enumerate(validation_loader):
         positions_ref, positions, inputs_ref, inputs = batch
@@ -107,7 +112,7 @@ if multi_var:
         corr_xr = xr.DataArray(corr_true.cpu().detach().numpy(), name='pearson', dims=('samples', 'corr'))
         corr_xr.to_netcdf(f'{VALIDATION_DIR}/pearson_val.nc')
     for n in range(n_samples):
-        dataset_train = EnsembleMultiVarDataset(variables, NUM_POINTS_TRAIN)
+        dataset_train = EnsembleMultiVarDataset(variables, NUM_POINTS_TRAIN, MEMBERS)
         train_loader = DataLoader(dataset_train, batch_size=NUM_POINTS_TRAIN, num_workers=4)
         for i, batch in enumerate(train_loader):
             positions_ref, positions, inputs_ref, inputs = batch
@@ -129,7 +134,7 @@ if multi_var:
             corr_xr.to_netcdf(f'{TRAIN_DIR}/pearson_train{n}.nc')
 # singlevar
 else:
-    dataset_validation = EnsemblePositionDataset(var_1, NUM_POINTS_VAL, grid='random')
+    dataset_validation = EnsemblePositionDataset(var_1, NUM_POINTS_VAL, MEMBERS, grid='random')
     validation_loader = DataLoader(dataset_validation, batch_size=NUM_POINTS_VAL, num_workers=4)
     for i, batch in enumerate(validation_loader):
         positions_ref, positions, inputs_ref, inputs = batch
@@ -154,7 +159,7 @@ else:
         pos_list = []
         mi_list = []
         corr_list = []
-        dataset_train = EnsemblePositionDataset(var_1, NUM_POINTS_TRAIN, grid='random')
+        dataset_train = EnsemblePositionDataset(var_1, NUM_POINTS_TRAIN, MEMBERS, grid='random')
         train_loader = DataLoader(dataset_train, batch_size=int(NUM_POINTS_TRAIN / 2), num_workers=4)
         for i, batch in enumerate(train_loader):
             positions_ref, positions, inputs_ref, inputs = batch
