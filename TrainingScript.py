@@ -243,8 +243,8 @@ def main():
     torch.save(feature_grid.state_dict(), f'{models_dir}/input_processing{e + 1}.pth')
     torch.save(encoder.state_dict(), f'{models_dir}/encoder{e + 1}.pth')
     torch.save(main_decoder.state_dict(), f'{models_dir}/decoder{e + 1}.pth')
-    shutil.copyfile(f'{CONFIG_PATH}/config_encoder.json', f'{models_dir}/config_encoder.json')
-    shutil.copyfile(f'{CONFIG_PATH}/config_decoder.json', f'{models_dir}/config_decoder.json')
+    shutil.copyfile(f'{CONFIG_PATH}/config_files/config_encoder.json', f'{models_dir}/config_encoder.json')
+    shutil.copyfile(f'{CONFIG_PATH}/config_files/config_decoder.json', f'{models_dir}/config_decoder.json')
     with open(f'{models_dir}/config.json', 'w') as file:
         if symm_method == "sum":
             symm_name = 'Add'
